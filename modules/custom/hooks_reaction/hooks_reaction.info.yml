@@ -1,0 +1,6 @@
+name: Hooks Reaction
+description: A module for splitting up a giant miscellaneous-module into smaller pieces.
+package: CTAC
+type: module
+version: 1.0
+core: 8.x

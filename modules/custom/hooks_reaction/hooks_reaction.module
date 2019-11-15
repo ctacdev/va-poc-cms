@@ -1,0 +1,232 @@
+<?php
+
+hooks_reaction_preinit();
+
+class HookReaction {
+    public $function;
+    public $source;
+    public $addedFromFile;
+    public $addedFromLine;
+
+    public function execute(&$arguments = array()) {
+        $refFunc = new ReflectionFunction($this->function);
+        $ret = $refFunc->invokeArgs($arguments);
+        return $ret;
+    }
+}
+
+class HookListenerCollection {
+
+    public $hookListeners = array();    // An array of HookListener objects with the key being the Drupal hook associated with the listener
+
+    public function addHookListener($drupalHook) {
+        if ( !isset($this->hookListeners[$drupalHook]) ) {
+            $newListener = new HookListener();
+            $newListener->drupalHook = $drupalHook;
+            $this->hookListeners[$drupalHook] = $newListener;
+        }
+    }
+
+    public function getListener($drupalHook) {
+        if ( isset($this->hookListeners[$drupalHook]) ) {
+            return $this->hookListeners[$drupalHook];
+        } else {
+            return false;
+        }
+    }
+
+    public function getInstalledTriggerFunctions() {
+        $triggerFunctions = array();
+        foreach( $this->hookListeners as $listener ) {
+            $triggerFunctions[$listener->$drupalHook] = ( $listener->triggerFunctionCode !== "" ) ? $listener->triggerFunctionCode : "(No trigger functions installed yet)" ;
+        }
+    }
+}
+
+class HookListener {
+
+    public $drupalHook = "";
+    public $reactions = array();                        // An array of HookReaction objects
+    public $triggerFunctionInstalled = false;
+    public $triggerFunctionCode = "";
+
+    public function addReaction($callable, $functSource, $addedFromFile, $addedFromLine, $groupName = "", $priorityWeight = 'default') {
+        $newReaction = new HookReaction();
+        $newReaction->function = $callable;
+        $newReaction->source = $functSource;
+        $newReaction->addedFromFile = $addedFromFile;
+        $newReaction->addedFromLine = $addedFromLine;
+
+        if ( $priorityWeight === true || $priorityWeight === "true" ) {
+
+            array_unshift($this->reactions, $newReaction);
+
+        } else {
+
+            if ( is_numeric($priorityWeight) && $priorityWeight !== false ) {
+                $startScanningAt = $priorityWeight;
+            } else {
+                $startScanningAt = 0;
+            }
+
+            for ( $x = $startScanningAt ; $x < 800000 ; $x++ ) {
+                if ( !array_key_exists($x, $this->reactions) ) {
+                    $this->reactions[$x] = $newReaction;
+                    break;
+                }
+            }
+            ksort($this->reactions);
+        }
+
+        $this->_installTriggerFunction();
+    }
+
+    private function _installTriggerFunction() {
+        if ( $this->triggerFunctionInstalled === false ) {
+            $this->triggerFunctionCode = $this->_buildHookTriggerFunction();
+            if ( $this->triggerFunctionCode !== false ) {
+                eval( $this->triggerFunctionCode );
+                $this->triggerFunctionInstalled = true;
+            }
+        }
+    }
+
+    public function executeAllReactions(&$arguments = array()) {
+        $ret = array();
+        foreach ( $this->reactions as $reaction ) {
+            $reactionReturned = $reaction->execute($arguments);
+            if ( !is_null($reactionReturned) ) $ret[] = $reactionReturned;
+        }
+        return $ret;
+    }
+
+    private function _buildHookTriggerFunction() {
+
+        // If the trigger-function exists already, then this is a hook that is in use by this (hooks_reaction) module
+        $hook = $this->drupalHook;
+        if ( function_exists("hooks_reaction_$hook") ) {
+            return false;
+        }
+
+        $arguments = array();
+        $firstReaction = new ReflectionFunction(reset($this->reactions)->function);
+        foreach ( $firstReaction->getParameters() as $hookListenerParam ) {
+            $newArgument = '';
+            if ( $hookListenerParam->isPassedByReference() ) { $newArgument .= '&'; }
+            $newArgument .= '$';
+            $newArgument .= $hookListenerParam->getName();
+            $arguments[] = $newArgument;
+        }
+        $arguments = implode(", ", $arguments);
+
+        // Add this function to be triggered by drupal when calling its hooks
+        return "
+            function hooks_reaction_$hook($arguments) {
+                \$args = array($arguments);
+                global \$hookReactions;
+                return \$hookReactions->getListener('$hook')->executeAllReactions(\$args);
+            }
+        ";
+    }
+}
+
+function hooks_reaction_preinit() {
+
+    // We shall run this functionality only ONCE (even if this function is called multiple times)
+    static $hooksReactionInit = false;
+    if ( $hooksReactionInit !== false ) return
+    $hooksReactionInit = true;
+
+    // Setup
+    global $hookReactions;
+    $hookReactions = new HookListenerCollection();
+
+    // We willcheck the URL for certain developer flags next
+    $ruri = $_SERVER['REQUEST_URI'];
+
+    // Safe-guard option in case we ever shoot ourselves in the foot (i.e. someone puts an exit() into a common hook or global-code)
+    if ( strpos($ruri, "-NO-HOOK-REACTION-") !== false ) return; // Disable implementation
+
+    // Eval (include) code from (organizaed reaction) files
+    if ( strpos($ruri, "-NO-FILE-HOOK-REACTION-") === false ) {
+        if ( is_dir(__DIR__  . '/reactions') ) {
+            $files = scandir(__DIR__  . '/reactions');
+            foreach ( $files as $file ) {
+                if ( strtolower(substr($file, -4)) === '.php' && strtolower(substr($file, -8)) !== '.tpl.php' ) {
+                    if ( stripos($ruri, "-NO-" . $file . "-HOOK-REACTION-") === false ) {
+                        $filePath = __DIR__  . '/reactions/' . $file;
+                        include realpath($filePath); // realpath() resolves symlinks
+                    }
+                }
+            }
+        }
+    }
+
+    // Eval (include) code from (organizaed reaction) files in ~/sites/ALL/reactions
+    if ( strpos($ruri, "-NO-FILE-HOOK-REACTION-") === false ) {
+        if ( is_dir('sites/all/reactions') ) {
+            $files = scandir('sites/all/reactions');
+            foreach ( $files as $file ) {
+                if ( strtolower(substr($file, -4)) === '.php' && strtolower(substr($file, -8)) !== '.tpl.php' ) {
+                    if ( stripos($ruri, "-NO-" . $file . "-HOOK-REACTION-") === false ) {
+                        $filePath = 'sites/all/reactions/' . $file;
+                        include realpath($filePath); // realpath() resolves symlinks
+                    }
+                }
+            }
+        }
+    }
+
+    // Eval (include) code from (organizaed reaction) files in ~/sites/MySite/reactions
+    $fsSitePath = \Drupal::service('site.path');
+    if ( strpos($ruri, "-NO-FILE-HOOK-REACTION-") === false ) {
+        if ( is_dir($fsSitePath.'/reactions') ) {
+            $files = scandir($fsSitePath.'/reactions');
+            foreach ( $files as $file ) {
+                if ( strtolower(substr($file, -4)) === '.php' && strtolower(substr($file, -8)) !== '.tpl.php' ) {
+                    if ( stripos($ruri, "-NO-" . $file . "-HOOK-REACTION-") === false ) {
+                        $filePath = $fsSitePath.'/reactions/'.$file;
+                        include realpath($filePath); // realpath() resolves symlinks
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+function hooks_reaction_add($drupalHookNames, $functionObj, $groupName = "", $priorityWeight = 0) {
+
+    // Support multiple-hooks for one function
+    if ( is_string($drupalHookNames) ) {
+        $drupalHookNames = explode(' ', $drupalHookNames);
+    }
+
+    foreach ( $drupalHookNames as $drupalHookName ) {
+
+        // Make sure $drupalHookName dosnt start with hook_
+        if ( strtolower(substr($drupalHookName, 0, 5)) === 'hook_' ) $drupalHookName = substr($drupalHookName, 5);
+
+        // @TODO - remove this
+        $thisCaller = array('file' => 'no-admin-no-debug', 'line' => 'no-admin-no-debug');
+        $functSource = 'no-admin-no-debug';
+
+        // Setup hookReactions array if it is not already
+        global $hookReactions;
+        if ( !isset($hookReactions) ) $hookReactions = new HookListenerCollection();
+
+        // Setup a Hook Listener for this Drupal hook if it is not setup already
+        $hookReactions->addHookListener($drupalHookName);
+
+        // Add this function associated under this Hook Listener
+        $hookReactions->getListener($drupalHookName)->addReaction(
+            $functionObj,
+            $functSource,
+            $thisCaller["file"],
+            $thisCaller['line'],
+            $groupName,
+            $priorityWeight
+        );
+
+    }
+}
