@@ -5,6 +5,31 @@
 * @preserve
 **/
 
+
+// Unmark the Edit-tab as active when necessary
+var pathParts = document.location.pathname.split('/');
+if ( pathParts[1] === 'node' && isNaN(pathParts[2]) === false && pathParts[3] === 'edit' ) {
+
+    if ( String(document.location.search).indexOf('workflow') != -1 ) {
+
+        jQuery('.tabs__tab.is-active').removeClass('is-active');
+    }
+}
+// Inject the Workflow button
+if ( jQuery('.tabs__tab > a').eq(1).text().indexOf('Edit') != -1 ) {
+
+    var pathParts = document.location.pathname.split('/');
+    if ( pathParts[1] === 'node' && isNaN(pathParts[2]) === false ) {
+
+        var makeActive = '';
+        if ( String(document.location.search).indexOf('workflow') != -1 ) makeActive = ' is-active';
+        var markup = '<li class="tabs__tab' + makeActive + '"><a href="/node/' + pathParts[2] + '/edit?workflow=1">Workflow</a</li>';
+
+        jQuery(markup).insertAfter( jQuery('.tabs__tab').eq(2) )
+    }
+}
+
+
 (function ($, Drupal) {
   function init(i, tab) {
     var $tab = $(tab);
