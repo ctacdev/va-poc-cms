@@ -12,3 +12,15 @@
   fill: #f5f5f2;
   stroke: #666;
 }
+
+.field__label {
+     width: 210px; 
+}
+
+.field__item {
+    margin-left: 210px;
+    padding: 10px;
+    outline: 1px dotted lightgrey;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
