@@ -3,6 +3,10 @@
 hooks_reaction_add('HOOK_node_presave',
     function($node) {
 
+        // We shall only react on new nodes here
+        $arrNode = $node->toArray();
+        if ( !empty($arrNode['nid']) ) return;
+
         $fieldMap = array(
             'field_title_eng' => 'field_title_es',
             'field_headline_eng' => 'field_headline_es',
