@@ -1,6 +1,10 @@
 <?php
 
-hooks_reaction_add('HOOK_form_node_site_page_edit_form_alter',
+hooks_reaction_add(
+    array(
+        'HOOK_form_node_site_page_edit_form_alter',
+        'HOOK_form_node_site_page_form_alter'
+    ),
     function(&$form, $form_state, $form_id) {
 
         // Kill the vertical-tab area on the right side
