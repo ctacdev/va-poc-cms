@@ -1,16 +1,5 @@
 <?php
 
-hooks_reaction_add('HOOK_form_node_site_page_edit_form_alter',
-    function(&$form, $form_state, $form_id) {
-
-        // dsm($form);
-
-        // We shall only react on the Edit-tab (not the Workflow-tab)
-        if ( !empty($_GET['workflow']) ) return;
-
-    }
-);
-
 hooks_reaction_add('HOOK_node_presave',
     function($node) {
 
@@ -21,6 +10,10 @@ hooks_reaction_add('HOOK_node_presave',
 
         // Load up the original node (before save)
         $nid = $node->nid->getString();
+        if ( empty($nid) ) {
+            $node->revision_log->setValue('Initial content creation');
+            return;
+        }
         $orig = \Drupal\node\Entity\Node::load($nid);
 
         // Check for changes to English fields
