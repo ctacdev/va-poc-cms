@@ -780,7 +780,7 @@ $settings['entity_update_backup'] = TRUE;
 $databases['default']['default'] = array (
   'database' => 'vad8',
   'username' => 'root',
-  'password' => 'blahblah',
+  'password' => ( gethostname() == 'dfrey-mbp' ? 'blahblah' : 'DYPxVOD81vhf' ),
   'prefix' => '',
   'host' => 'localhost',
   'port' => '3306',
