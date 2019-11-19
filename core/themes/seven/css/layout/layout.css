@@ -13,14 +13,31 @@
   stroke: #666;
 }
 
-.field__label {
+body.page-node-type-site-page .field__label {
      width: 210px; 
 }
 
-.field__item {
+body.page-node-type-site-page .field__item {
     margin-left: 210px;
     padding: 10px;
     outline: 1px dotted lightgrey;
     margin-top: 5px;
     margin-bottom: 5px;
+}
+
+body.path-frontpage .views-row {
+    background-image: url(/sites/default/images/tv-collapsable.png);
+    background-repeat: no-repeat;
+    background-size: 20px;
+    padding-left: 22px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+body.path-frontpage .views-field.views-field-field-children-1,
+body.path-frontpage .views-field-title {
+    background-image: url(/sites/default/images/cmp-page-nonempty.png);
+    background-repeat: no-repeat;
+    background-size: 20px;
+    padding-left: 25px;
 }

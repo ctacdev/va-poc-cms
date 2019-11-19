@@ -23,9 +23,24 @@ if ( jQuery('.tabs__tab > a').eq(1).text().indexOf('Edit') != -1 ) {
 
         var makeActive = '';
         if ( String(document.location.search).indexOf('workflow') != -1 ) makeActive = ' is-active';
-        var markup = '<li class="tabs__tab' + makeActive + '"><a href="/node/' + pathParts[2] + '/edit?workflow=1">Workflow</a</li>';
+        var apiPath = '/api-eng' + pathParts[2];
+        var apiPathEs = '/api-eng' + pathParts[2];
+        var markup = '<li class="tabs__tab' + makeActive + '"><a href="/node/' + pathParts[2] + '/edit?workflow=1">Workflow</a</li>     <li class="tabs__tab"><a target="_blank" href="' + apiPath + '">API Output (Eng)</a</li>     <li class="tabs__tab"><a target="_blank" href="' + apiPathEs + '">API Output (Es)</a</li>';
 
         jQuery(markup).insertAfter( jQuery('.tabs__tab').eq(2) )
+    } else {
+
+      var pathParts = jQuery('.tabs__tab > a').eq(1).prop('href').split('/');
+      if ( pathParts[3] === 'node' && isNaN(pathParts[4]) === false ) {
+
+          var makeActive = '';
+          if ( String(document.location.search).indexOf('workflow') != -1 ) makeActive = ' is-active';
+          var apiPath = '/api-eng' + document.location.pathname;
+          var apiPathEs = '/api-eng' + document.location.pathname;
+          var markup = '<li class="tabs__tab' + makeActive + '"><a href="/node/' + pathParts[4] + '/edit?workflow=1">Workflow</a</li>    <li class="tabs__tab"><a target="_blank" href="' + apiPath + '">API Output (Eng)</a</li>     <li class="tabs__tab"><a target="_blank" href="' + apiPathEs + '">API Output (Es)</a</li>';
+
+          jQuery(markup).insertAfter( jQuery('.tabs__tab').eq(2) )
+      }
     }
 }
 
