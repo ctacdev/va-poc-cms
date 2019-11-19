@@ -43,6 +43,8 @@ hooks_reaction_add(
             $form['field_headline_es']['#access'] = false;
             $form['field_title_es']['#access'] = false;
 
+            $form['field_children']['#access'] = false;
+
             // Hide the actions and the internal-title
             $form['title']['#access'] = false;
             $form['actions']['#attributes']['style'] = 'display: none;';
