@@ -9,6 +9,9 @@ hooks_reaction_add('HOOK_node_presave',
             if ( !empty($arrNode['nid']) ) return;
         }
 
+        // We shall only react on NON basic pages here
+        if ( $arrNode['type'][0]['target_id'] == 'basic_page' ) return;
+
         $fieldMap = array(
             'field_title_eng' => 'field_title_es',
             'field_headline_eng' => 'field_headline_es',
@@ -57,7 +60,7 @@ hooks_reaction_add('HOOK_node_presave',
             // Notify the user of this action that was taken
             drupal_set_message(
                 t("Automaitcally translate the {$fieldLabelMap[$fieldEng]} field in Spanish using the Google-Translate"),
-                "warning"
+                "status"
             );
         }
     }
