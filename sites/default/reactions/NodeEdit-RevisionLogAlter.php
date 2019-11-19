@@ -5,6 +5,10 @@ hooks_reaction_add('HOOK_node_presave',
 
         $log = '';
 
+        // We shall only react on NON basic pages here
+        $arrNode = $node->toArray();
+        if ( $arrNode['type'][0]['target_id'] == 'basic_page' ) return;
+
         // If this node already has a revision-log message, bail
         if ( !empty($node->revision_log->getString()) ) return;
 
